@@ -1,4 +1,5 @@
-import { pgSchema, pgSequence } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { integer, pgSchema, pgSequence, pgTable } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
 import { diff, prepareTestDatabase, push, TestDatabase } from './mocks';
 
@@ -454,6 +455,34 @@ test('Add basic sequences', async () => {
 
 	const schema2 = {
 		seq: pgSequence('my_seq', { startWith: 100 }),
+	};
+
+	const { sqlStatements: st } = await diff(schema1, schema2, []);
+
+	await push({ db, to: schema1 });
+	const { sqlStatements: pst } = await push({ db, to: schema2 });
+
+	const st0: string[] = [];
+
+	expect(st).toStrictEqual(st0);
+	expect(pst).toStrictEqual(st0);
+});
+
+test('nextval default on a sequence the column does not own: no changes', async () => {
+	const schema1 = {
+		sharedSeq: pgSequence('shared_seq'),
+		tickets: pgTable('tickets', {
+			id: integer('id').primaryKey(),
+			ticketNo: integer('ticket_no').default(sql`nextval('shared_seq'::regclass)`),
+		}),
+	};
+
+	const schema2 = {
+		sharedSeq: pgSequence('shared_seq'),
+		tickets: pgTable('tickets', {
+			id: integer('id').primaryKey(),
+			ticketNo: integer('ticket_no').default(sql`nextval('shared_seq'::regclass)`),
+		}),
 	};
 
 	const { sqlStatements: st } = await diff(schema1, schema2, []);
