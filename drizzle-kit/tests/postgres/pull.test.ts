@@ -3745,7 +3745,9 @@ test('issue #5413', async () => {
 	expect(pushStatements1).toStrictEqual([]);
 	expect(schemaFromFile.columns.filter((it) => it.name === 'id')).toStrictEqual([
 		{
-			default: null,
+						// the sequence is not owned by the column, so it is an integer with a
+			// nextval default, not a serial (see #6738); the round-trip above still holds
+			default: "nextval('manual_seq_table_id_seq1'::regclass)",
 			dimensions: 0,
 			entityType: 'columns',
 			generated: null,
@@ -3756,7 +3758,7 @@ test('issue #5413', async () => {
 			pkName: null,
 			schema: 'public',
 			table: 'manual_seq_table',
-			type: 'serial', // correct parsing
+			type: 'integer', // correct parsing
 			typeSchema: null,
 			unique: false,
 			uniqueName: null,
