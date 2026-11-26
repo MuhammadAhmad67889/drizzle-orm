@@ -795,7 +795,10 @@ export const fromDatabase = async (
 
 		const expr = defaultsByPosition.get(columnPosition(column.tableId, column.ordinality));
 
-		if (expr) {
+		// Only a column that owns a sequence is a serial: a nextval() default on a
+		// sequence owned by someone else (or by no column at all) must stay an integer
+		// with that default, or push plans to drop a sequence that was never created.
+		if (expr && column.seqId) {
 			const table = tablesById.get(Number(column.tableId))!;
 			const isSerial = isSerialExpression(expr.expression, table.schema);
 			column.type = isSerial ? type === 'bigint' ? 'bigserial' : type === 'integer' ? 'serial' : 'smallserial' : type;
